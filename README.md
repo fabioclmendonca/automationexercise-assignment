@@ -40,7 +40,9 @@ npm test               # everything (api + chromium + firefox + webkit)
 npm run test:api       # API project only
 npm run test:e2e       # e2e, all three browser projects
 npm run test:e2e:headed
-npm run test:ui        # Playwright UI mode
+npm run test:ui        # Playwright UI mode (chromium)
+npm run test:ui-api    # Playwright UI mode (chromium + api)
+npm run test:container # api + chromium only - the container/CI default (see below)
 npm run typecheck      # tsc --noEmit
 ```
 
@@ -72,6 +74,41 @@ npx playwright show-report
 This opens `playwright-report/index.html` in a browser, with a
 pass/fail/skip breakdown per test, traces, and screenshots for anything
 that failed or was retried.
+
+## Running in Docker
+
+The `Dockerfile` at the repo root is based on
+`mcr.microsoft.com/playwright:v1.63.0-jammy` - it already bundles
+Chromium, Firefox, and WebKit plus every OS dependency they need, so no
+extra install step is required (the tag must match the `@playwright/test`
+version in `package.json`; bump both together when upgrading).
+
+```bash
+docker build -t automationexercise-tests .
+
+# api + chromium only (the default CMD, npm run test:container) - a fast,
+# still-meaningful gate without the extra time of firefox/webkit in a
+# container with no host GPU/font-cache warmup:
+docker run --rm automationexercise-tests
+
+# Full cross-browser suite on demand:
+docker run --rm automationexercise-tests npm test
+
+# Any other script works the same way, e.g. API-only:
+docker run --rm automationexercise-tests npm run test:api
+
+# Get the HTML report onto the host by mounting the output directory:
+docker run --rm -v "$(pwd)/playwright-report:/app/playwright-report" automationexercise-tests
+npx playwright show-report
+
+# Override BASE_URL/API_BASE_URL the same way you would locally:
+docker run --rm -e BASE_URL=https://example.com automationexercise-tests
+```
+
+This is the same image `.github/workflows/playwright.yml` builds and runs
+in CI, so a green run locally in Docker means CI will see the same result
+(CI also defaults to `test:container`; the full suite is a manual/on-demand
+run, not part of the CI gate).
 
 ## Project structure
 
@@ -138,5 +175,11 @@ HTTP status) that every API test explicitly guards against.
 
 ## CI
 
-`.github/workflows/playwright.yml` runs on push/PR: install, `typecheck`,
-then the full test suite, uploading the HTML report only on failure.
+`.github/workflows/playwright.yml` runs on push/PR: builds the same
+`Dockerfile` described above, runs `typecheck` and `npm run test:container`
+(api + chromium) inside that container (with `CI=true` passed through
+explicitly, since `docker run` doesn't forward the runner's environment by
+default and `playwright.config.ts` uses that variable for retries/workers),
+and uploads the HTML report only on failure. The full cross-browser suite
+isn't part of the CI gate - run it on demand locally (see "Running in
+Docker" above) when firefox/webkit coverage needs checking.

@@ -188,13 +188,12 @@ security testing, and anything requiring a completed real payment (see
 
 ## Summary for implementation
 
-- Cart quantity (F1/F2): automated E2E cart tests should use small
-  realistic quantities for normal-path coverage; F1 specifically is a
-  good candidate for one deliberate negative-path E2E test if time
-  allows, since it's a confirmed, reproducible defect in a high-priority
-  flow.
-- Product-not-found (F3): worth one lightweight E2E check if time allows;
-  otherwise recorded as a known gap.
+- Cart quantity (F1/F2): automated E2E cart tests use small realistic
+  quantities for normal-path coverage. F1 is now a deliberate
+  `test.fail()` regression test,
+  `tests/e2e/edge-cases/cart-negative-quantity.spec.ts`.
+- Product-not-found (F3): now a deliberate `test.fail()` regression test,
+  `tests/e2e/edge-cases/product-not-found.spec.ts`.
 - API response conventions (F4): already reflected in every API test's
   assertion style per `test-strategy.md` — assert `body.responseCode`,
   never rely on `response.ok()` or `Content-Type`.
@@ -388,14 +387,13 @@ behavior. Each hypothesis below is reproduced directly, not inferred.
 
 ## Summary for implementation (session 2)
 
-- Empty-cart checkout (F6): strong candidate for one deliberate E2E
-  negative-path test if time allows — log in, skip adding any product,
-  assert `/checkout` (or the order-confirmation step) is blocked, or at
-  minimum document this as a known gap if not automated.
-- Case-sensitive login (F7): worth one negative API test
-  (`verifyLogin` with the registered email's case flipped expecting
-  `404`) since it's a one-call, fully deterministic check with no cleanup
-  cost beyond the account itself.
+- Empty-cart checkout (F6): now a deliberate `test.fail()` regression
+  test, `tests/e2e/edge-cases/empty-cart-checkout.spec.ts` — logs in, skips
+  adding any product, asserts the order-confirmation message is not shown.
+- Case-sensitive login (F7): now a normal passing test,
+  `tests/api/edge-cases/case-sensitive-login.spec.ts` — pins the current
+  behavior (`verifyLogin` 404s on the registered email's case flipped) as
+  documented, not treated as a defect.
 - H1/H2 (cart merge behavior, multi-item checkout totals): confirmed
   correct — no automated coverage strictly required to "catch" a bug, but
   H2 in particular is a reasonable candidate for a single positive E2E

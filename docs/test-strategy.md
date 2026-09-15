@@ -12,7 +12,10 @@ Risk-based, not feature-count-based. A small number of automated checks at
 the layer best suited to prove each behavior, backed by one exploratory
 session against the live site/API to surface risks that a spec-reading pass
 would miss. Playwright Test is used for both API (`request` fixture) and
-browser automation, per the assignment's required technology.
+browser automation, per the assignment's required technology. Every test is
+tagged by domain (`@cart`, `@login`, `@checkout`, etc.) for selective
+execution, and the suite runs inside the same Docker image both locally and
+in CI — see `README.md` for the tag list and Docker usage.
 
 ## Priorities and rationale
 
@@ -257,14 +260,20 @@ remove the data-pollution risk described above.
 - **No custom `BrowserFactory`.** Playwright's native browser projects and
   fixtures already manage `Browser`/`BrowserContext`/`Page` lifecycle. No
   concrete requirement in this assignment justifies wrapping that.
-- **No `ApiClient` yet.** There is currently one API spec file. Introduce a
-  client/helper only once at least two API test files show real, repeated
-  request-construction duplication.
-- **No `BasePage` yet.** There is currently one Page Object. Revisit only if
-  two or more Page Objects show identical duplicated boilerplate - e.g. a
-  shared header/nav component would be a composition candidate (a small
-  `NavBar` component object used by multiple pages), not an inheritance base
-  class.
+- **No `ApiClient`.** There are now 6 API spec files; none share
+  repeated *request-construction* logic (each still calls `request.get/post/
+  put/delete` directly with its own inline payload) — the one instance of
+  real duplication (the `AccountPayload` shape + `buildAccountPayload`
+  helper, duplicated between `account-lifecycle.spec.ts` and
+  `edge-cases/case-sensitive-login.spec.ts`) is test *data*, not a client,
+  and is deliberately kept file-local per the API/E2E separation principle
+  below — it doesn't meet the bar for a shared client.
+- **No `BasePage` class.** There are now 9 Page Objects, and the predicted
+  scenario below already happened twice — handled by composition, exactly
+  as planned, not inheritance: `SubscriptionFooter` (shared by `HomePage`
+  and `CartPage`) and `CartConfirmationModal` (shared by `ProductsPage` and
+  `HomePage`) are both small composed objects, not a common base class.
+  This confirms the original call rather than contradicting it.
 - **ESLint intentionally excluded for this phase.** Strict TypeScript plus
   `tsc --noEmit` covers the essential correctness/type-safety value for a
   3-5 hour assignment. Adding ESLint config and dependencies is legitimate

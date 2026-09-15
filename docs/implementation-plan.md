@@ -1,5 +1,12 @@
 # Implementation Plan
 
+> **Note:** file paths throughout this document have been kept up to date
+> with the `pages/`/`fixtures/` → `tests/pages/`/`tests/fixtures/` move and
+> the `tests/e2e/fixtures/` → `tests/e2e/data/` rename. The edge-cases
+> extraction, domain tagging, and containerized execution that came after
+> Phase 2 are not woven into the Phase 1/Phase 2 narrative below — see
+> **Phase 3** for those.
+
 Scope: turn the validated framework foundation (config, `HomePage`, one
 fixture, two smoke tests, CI) into the real API + E2E coverage described in
 `docs/test-strategy.md`, informed by `docs/exploratory-testing.md`. Planning
@@ -25,10 +32,10 @@ to assert against is now known.
 
 ## Ordered tasks
 
-1. **Page Objects** (`pages/SignupLoginPage.ts`, `pages/ProductsPage.ts`,
-   `pages/ProductDetailPage.ts`, `pages/CartPage.ts`)
+1. **Page Objects** (`tests/pages/SignupLoginPage.ts`, `tests/pages/ProductsPage.ts`,
+   `tests/pages/ProductDetailPage.ts`, `tests/pages/CartPage.ts`)
    - Goal: locators + actions only (no assertions), same style as
-     `pages/HomePage.ts`, one per UI surface actually exercised below.
+     `tests/pages/HomePage.ts`, one per UI surface actually exercised below.
    - `SignupLoginPage`: signup name/email fields + button; login
      email/password + button; account-information form fields (title,
      password, DOB, first/last name, address, country, state, city,
@@ -44,7 +51,7 @@ to assert against is now known.
    - Validation: `tsc --noEmit` passes; no assertions present in these
      files (grep check).
 
-2. **Fixture wiring** (`fixtures/fixtures.ts`)
+2. **Fixture wiring** (`tests/fixtures/fixtures.ts`)
    - Goal: inject the four new Page Objects alongside `homePage`, replacing
      the "remove if it never grows past one Page Object" comment with a
      short note that it has now grown as anticipated.
@@ -130,9 +137,9 @@ deliberately).
 
 ## Files/modules to be created
 
-- `pages/SignupLoginPage.ts`, `pages/ProductsPage.ts`,
-  `pages/ProductDetailPage.ts`, `pages/CartPage.ts`
-- `fixtures/fixtures.ts` (edit: extend, don't replace)
+- `tests/pages/SignupLoginPage.ts`, `tests/pages/ProductsPage.ts`,
+  `tests/pages/ProductDetailPage.ts`, `tests/pages/CartPage.ts`
+- `tests/fixtures/fixtures.ts` (edit: extend, don't replace)
 - `tests/api/products-brands.spec.ts`
 - `tests/api/search.spec.ts`
 - `tests/api/login-negative.spec.ts`
@@ -150,7 +157,11 @@ justified by the scenario list above.
 
 ## Out of scope (from `docs/test-strategy.md`, not re-argued here)
 
-- Completing a real, paid checkout.
+- ~~Completing a real, paid checkout~~ and ~~Contact Us and other
+  low-traffic static pages~~ — both **later reversed** once Phase 2 (below)
+  confirmed the payment step is fake and added Contact Us/Test Cases as
+  official cases 6/7. Accurate for Phase 1 at the time; see
+  `docs/test-strategy.md`'s "Intentional exclusions" for the current list.
 - Email verification / actual email delivery.
 - Performance and load testing.
 - Dedicated security testing (fuzzing, auth/authorization abuse) beyond
@@ -160,7 +171,6 @@ justified by the scenario list above.
   projects.
 - Exhaustive field-by-field validation matrix for the account/address
   forms.
-- Contact Us and other low-traffic static pages.
 - `BrowserFactory`, `ApiClient`, `BasePage`, ESLint — already decided
   against for this phase in `test-strategy.md`'s architecture section.
 - A shared `NavBar` component object — only one spec (`registration`)
@@ -171,9 +181,11 @@ justified by the scenario list above.
 
 Only pursue after all required tasks are done and validated:
 
-- Test tagging (e.g. `@regression` on the F1/F3 tests) so they can be
-  filtered out of a "must be fully green" CI gate if desired, given they
-  use `test.fail()`.
+- ~~Test tagging~~ — **done** in a later pass, though with a different
+  scheme than sketched here: domain tags (`@cart`, `@login`, `@checkout`,
+  etc.) shared across API and E2E where the same concept exists at both
+  layers, plus `@edge-case` for F1/F3/F6/F7 and checkout-gating, rather
+  than a single `@regression` tag. See Phase 3 below.
 - Dedicated tests for F2 (no upper bound on cart quantity) or F5 (no
   server-side email format validation) — the strategy doc treats these as
   already-mitigated-by-process (F2 "worth fixing alongside F1" with no
@@ -214,7 +226,12 @@ coverage outside the 26 and are not renamed.
 | `tests/e2e/scroll.spec.ts` | New | 25, 26 |
 | `tests/e2e/checkout-gating.spec.ts` | Unchanged | none (bonus, not renamed) |
 
-1 + 4 + 1 + 3 + 3 + 2 + 5 + 5 + 2 = 26. Grouping rule: reuse a Phase 1 file
+1 + 4 + 1 + 3 + 3 + 2 + 5 + 5 + 2 = 26. (A later pass moved
+`checkout-gating.spec.ts` into `tests/e2e/edge-cases/` and extracted the
+F1/F3 regressions out of `cart.spec.ts`/`product-details.spec.ts` into that
+same folder, alongside new F6/F7 tests — not reflected in the table above;
+see Phase 3 below for exact file locations. None of that changes the 26
+official-case count or their contents.) Grouping rule: reuse a Phase 1 file
 when the new case shares its domain and Page Objects with what's already
 there (registration/login/logout all revolve around `SignupLoginPage`;
 product discovery/detail/review all revolve around `ProductsPage` +
@@ -240,19 +257,19 @@ that check is.
 
 **New:**
 
-- **`pages/CheckoutPage.ts`** — address/order-review display, order
+- **`tests/pages/CheckoutPage.ts`** — address/order-review display, order
   comment textarea, "Place Order" button, payment form (name on card, card
   number, CVC, expiration month/year), "Pay and Confirm Order" button,
   order-confirmation success message, "Download Invoice" button/link. See
   design decision below for its `completeOrder()` method.
-- **`pages/ContactUsPage.ts`** — name/email/subject/message fields, file
+- **`tests/pages/ContactUsPage.ts`** — name/email/subject/message fields, file
   upload input, submit button, success message, "Home" button. Exposes
   `submitAndAcceptDialog()`, which registers `page.once('dialog', d =>
   d.accept())` immediately before clicking Submit so the native
   `window.confirm()` triggered by this site's Contact Us form (confirmed
   live, not assumed) is handled deterministically instead of racing the
   click.
-- **`pages/CartConfirmationModal.ts`** — small composed component (not a
+- **`tests/pages/CartConfirmationModal.ts`** — small composed component (not a
   base class) for the "added to cart" modal (`#cartModal` + its "View
   Cart" link). Held as a property on `ProductsPage` and `HomePage` (see
   design decision below). `ProductDetailPage`'s existing inline
@@ -264,7 +281,7 @@ that check is.
   `ProductDetailPage`'s `cartModal`/`viewCartLink` fields noting they model
   the same modal as `CartConfirmationModal` and were deliberately not
   migrated, so a future editor fixing one knows to check the other.
-- **`pages/SubscriptionFooter.ts`** — small composed component for the
+- **`tests/pages/SubscriptionFooter.ts`** — small composed component for the
   subscription widget (email input, subscribe button). Held as a property
   on `HomePage` and `CartPage` (see design decision below).
 
@@ -366,7 +383,7 @@ replaces (yes — each is under 15 lines and holds no state).
 
 Beyond the per-case API-vs-UI table already decided in
 `docs/test-strategy.md`, one new construct is added: an **`apiAccount`
-fixture** in `fixtures/fixtures.ts`, typed `TestAccount` (name, email,
+fixture** in `tests/fixtures/fixtures.ts`, typed `TestAccount` (name, email,
 password, firstname, lastname, address1, country, state, city, zipcode,
 mobile_number — the same shape as the existing `AccountPayload` in
 `tests/api/account-lifecycle.spec.ts`, but a separate type local to
@@ -393,7 +410,7 @@ signup directly (registration is either the thing under test or is
 scripted as part of the checkout flow itself), consistent with the
 strategy table — they do not use this fixture.
 
-A small fixed upload fixture, `tests/e2e/fixtures/sample-upload.txt`, is
+A small fixed upload fixture, `tests/e2e/data/sample-upload.txt`, is
 added for case 6's file-upload step, as already sketched.
 
 ### Cleanup / hygiene for every account-creating or order-placing case
@@ -482,10 +499,10 @@ visual regression, exhaustive field matrices) — not re-litigated here.
 
 ### Ordered tasks
 
-1. **Shared scaffolding** — `pages/CheckoutPage.ts`, `pages/ContactUsPage.ts`,
-   `pages/CartConfirmationModal.ts`, `pages/SubscriptionFooter.ts`,
-   `tests/e2e/fixtures/sample-upload.txt`, and the `apiAccount` fixture +
-   `TestAccount` type in `fixtures/fixtures.ts`. Everything below depends
+1. **Shared scaffolding** — `tests/pages/CheckoutPage.ts`, `tests/pages/ContactUsPage.ts`,
+   `tests/pages/CartConfirmationModal.ts`, `tests/pages/SubscriptionFooter.ts`,
+   `tests/e2e/data/sample-upload.txt`, and the `apiAccount` fixture +
+   `TestAccount` type in `tests/fixtures/fixtures.ts`. Everything below depends
    on this.
    - Validation: `tsc --noEmit` passes; no assertions in the new Page
      Object files.
@@ -512,9 +529,9 @@ visual regression, exhaustive field matrices) — not re-litigated here.
    specs first.
 10. **Scroll** — `scroll.spec.ts` (cases 25, 26).
 11. **README refresh** — update the coverage description to state 26/26
-    official cases are covered, and add `pages/CheckoutPage.ts`,
-    `pages/ContactUsPage.ts`, `pages/CartConfirmationModal.ts`, and
-    `pages/SubscriptionFooter.ts` to the Page Objects list.
+    official cases are covered, and add `tests/pages/CheckoutPage.ts`,
+    `tests/pages/ContactUsPage.ts`, `tests/pages/CartConfirmationModal.ts`, and
+    `tests/pages/SubscriptionFooter.ts` to the Page Objects list.
 12. **Final validation** — `npm run typecheck && npm test` (all three
     browser projects); grep every new `test(` title against the 26
     official titles for an exact 1:1 match; confirm no test depends on
@@ -530,3 +547,93 @@ No optional/nice-to-have items are proposed for this phase — the phase's
 entire scope is closing a required, already-decided gap (26/26), so there
 is nothing here to defer behind "optional." Phase 1's own optional section
 above is unaffected.
+
+## Phase 3: Edge cases, domain tags, and containerized execution
+
+Scope: three follow-up changes made after Phase 2, none of which touch the
+26 official cases or their content — closes gaps the earlier phases either
+deferred or didn't anticipate.
+
+### Edge-cases extraction and new coverage
+
+`tests/e2e/checkout-gating.spec.ts` and the F1/F3 `test.fail()` regression
+tests (previously inline in `cart.spec.ts` and `product-details.spec.ts`
+respectively) were moved into a dedicated `tests/e2e/edge-cases/` folder,
+renamed to match their content:
+
+- `tests/e2e/edge-cases/checkout-gating.spec.ts` (unchanged content, moved)
+- `tests/e2e/edge-cases/cart-negative-quantity.spec.ts` (was the F1 test)
+- `tests/e2e/edge-cases/product-not-found.spec.ts` (was the F3 test)
+
+Two new tests were added to the same folder:
+
+- `tests/e2e/edge-cases/empty-cart-checkout.spec.ts` — F6, a `test.fail()`
+  regression: checking out with an empty cart currently confirms a real
+  order (`/payment_done/0`, Rs. 0) instead of being blocked. Same pattern
+  as F1/F3 — encodes the desired (currently-false) behavior rather than
+  asserting the bug as correct.
+- `tests/api/edge-cases/case-sensitive-login.spec.ts` — F7, a **normal
+  passing** test (no `test.fail()`): pins that `verifyLogin` is
+  case-sensitive on the registered email as documented, current behavior —
+  `docs/exploratory-testing.md`'s own recommendation treats this as a
+  usability note to record, not a defect to flag as failing.
+
+None of Phase 1/Phase 2's non-bonus files were touched beyond removing the
+extracted tests; `cart.spec.ts` and `product-details.spec.ts` keep their
+official-case tests exactly as before.
+
+### Domain tagging
+
+Every test — API and E2E — is tagged via Playwright's native `{ tag: [...]
+}` option (no custom tagging layer). One tag per domain, reused across
+layers where the same domain exists at both: `@cart`, `@login`,
+`@checkout`, `@product`, `@brand`, `@search`, `@account`, `@registration`,
+`@subscription`, `@navigation`, `@contact`, `@scroll`, `@smoke`, plus
+`@edge-case` applied to all five files above (in addition to their domain
+tag). `@login`, for example, is on `tests/api/login-negative.spec.ts`,
+`tests/api/edge-cases/case-sensitive-login.spec.ts`, and
+`tests/e2e/login.spec.ts`, so `npx playwright test --grep @login` runs all
+three together. See `README.md` for the full tag table and filtering
+examples.
+
+### Containerized execution
+
+A `Dockerfile` at the repo root, based on
+`mcr.microsoft.com/playwright:v1.63.0-jammy` (pinned to match the
+installed `@playwright/test` version, 1.63.0, so the bundled
+Chromium/Firefox/WebKit line up with what the config expects) — copies
+`package.json`/`package-lock.json`, runs `npm ci`, copies the rest of the
+repo, and defaults to a new `test:container` script
+(`playwright test --project=api --project=chromium`). A `.dockerignore`
+excludes `node_modules`, `playwright-report`, `test-results`, `.git`,
+`.claude`, `CLAUDE.md`, and `.env`.
+
+`test:container` (api + chromium only, not the full cross-browser suite)
+is the container's default because firefox/webkit roughly double the run
+time inside a container with no host GPU/font-cache warmup, for coverage
+that's already exercised the same way on every local run — the full suite
+stays one `docker run --rm <image> npm test` away for anyone who needs
+firefox/webkit signal.
+
+`.github/workflows/playwright.yml` was changed from installing Node and
+Playwright browsers natively to building this same Dockerfile and running
+`typecheck && test:container` inside it, mounting `playwright-report/`
+from the host so the existing failure-artifact upload step keeps working
+unchanged. `docker run` doesn't forward the runner's environment by
+default, and `playwright.config.ts` reads `process.env.CI` for
+retries/workers/`forbidOnly`, so the workflow passes `-e CI=true`
+explicitly — without it, CI would silently run with local (non-CI)
+settings.
+
+### Bug fix: `test:ui` / `test:ui-api` were missing `--ui`
+
+Both npm scripts existed but ran `playwright test --project=...` without
+the `--ui` flag, so neither actually opened Playwright's interactive UI
+mode despite their names (a change introduced in an earlier, unrequested
+commit — see project history). Fixed to
+`playwright test --project=chromium --ui` and
+`playwright test --project=chromium --project=api --ui` respectively.
+
+No optional/nice-to-have items are proposed for this phase either — each
+of the three changes above was a direct, explicit request, not a
+discretionary addition.

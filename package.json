@@ -8,8 +8,9 @@
     "test:api": "playwright test --project=api",
     "test:e2e": "playwright test --project=chromium --project=firefox --project=webkit",
     "test:e2e:headed": "playwright test --project=chromium --project=firefox --project=webkit --headed",
-    "test:ui": "playwright test --project=chromium",
-    "test:ui-api": "playwright test --project=chromium --project=api",
+    "test:ui": "playwright test --project=chromium --ui",
+    "test:ui-api": "playwright test --project=chromium --project=api --ui",
+    "test:container": "playwright test --project=api --project=chromium",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

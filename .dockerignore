@@ -1,0 +1,9 @@
+node_modules
+playwright-report
+test-results
+blob-report
+.git
+.claude
+CLAUDE.md
+.env
+.DS_Store
