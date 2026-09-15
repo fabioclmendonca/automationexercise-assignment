@@ -2,10 +2,19 @@
 
 Playwright + TypeScript automation suite for
 [automationexercise.com](https://automationexercise.com) and its public API,
-built for a time-boxed SDET technical assignment. This commit establishes the
-framework foundation: configuration, one Page Object, one fixture, and one
-smoke test per layer (API and E2E) proving the setup works end to end. Real
-business-scenario coverage is added on top of this foundation separately.
+built for a time-boxed SDET technical assignment. It covers the API's
+documented contracts and validation behavior (products/brands, search,
+login, and a full account create/verify/update/delete lifecycle), the
+highest-risk end-to-end user journeys (registration, product discovery and
+details, cart, and the checkout login gate), two deliberate `test.fail()`
+regression tests that document confirmed defects found during exploratory
+testing rather than asserting buggy behavior as correct, and **all 26 of
+the officially published test cases** from
+[automationexercise.com/test_cases](https://automationexercise.com/test_cases)
+(each automated with that case's exact official title, so the suite can be
+cross-checked 1:1 against the public list). See `docs/test-strategy.md`,
+`docs/exploratory-testing.md`, and `docs/implementation-plan.md` for the
+reasoning behind what is (and isn't) covered.
 
 ## Prerequisites
 
@@ -46,18 +55,36 @@ docs/           # test strategy and related decisions
 ```
 
 - `tests/api` - request/response contract and business-rule tests against the
-  public API.
-- `tests/e2e` - critical user-journey and browser/UI tests.
-- `pages` - Page Objects for repeated or non-trivial UI interactions.
-- `fixtures` - shared, meaningful test setup exposed via `test.extend`.
-- `docs` - test strategy and recorded architecture decisions.
+  public API (products/brands, search, login negative paths, and the full
+  account lifecycle).
+- `tests/e2e` - critical user-journey and browser/UI tests, including all 26
+  official test cases (registration/login, contact us, navigation, product
+  discovery/details, subscription, cart, checkout/order placement, scroll
+  behavior) plus checkout gating and the two `test.fail()` regressions.
+- `pages` - Page Objects for repeated or non-trivial UI interactions
+  (`HomePage`, `SignupLoginPage`, `ProductsPage`, `ProductDetailPage`,
+  `CartPage`, `CheckoutPage`, `ContactUsPage`, `CartConfirmationModal`,
+  `SubscriptionFooter`).
+- `fixtures` - shared, meaningful test setup exposed via `test.extend`,
+  including the `apiAccount` fixture (provisions a unique account via the
+  API for tests where login/account state is a precondition, not the thing
+  under test, and best-effort deletes it afterwards).
+- `docs` - test strategy, exploratory testing findings, the implementation
+  plan, and recorded architecture decisions:
+  - [`docs/test-strategy.md`](docs/test-strategy.md) - approach,
+    priorities, API vs. E2E decisions, risks, and assumptions.
+  - [`docs/exploratory-testing.md`](docs/exploratory-testing.md) - the
+    exploratory session and concrete findings (F1-F5) referenced by several
+    tests.
+  - [`docs/implementation-plan.md`](docs/implementation-plan.md) - the
+    prioritized, scenario-level plan this suite was built from.
 
 ## Architecture decisions
 
 See [`docs/test-strategy.md`](docs/test-strategy.md) for the reasoning
 behind not adding a `BrowserFactory`, `ApiClient`, `BasePage`, or ESLint at
 this stage, and for the verified API quirk (`responseCode` in the body vs.
-HTTP status) that the API smoke test explicitly guards against.
+HTTP status) that every API test explicitly guards against.
 
 ## CI
 

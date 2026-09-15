@@ -4,3 +4,4 @@ playwright-report/
 .env
 blob-report/
 playwright/.cache/
+.claude

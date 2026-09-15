@@ -14,10 +14,19 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
   timeout: 30_000,
   expect: {
-    timeout: 5_000,
+    // Bumped from 5s during Phase 2 for the same reason as actionTimeout
+    // above - state transitions on the shared demo site (e.g. session
+    // recognition right after login, modal/navigation after a click)
+    // occasionally take a few seconds longer than 5s to settle.
+    timeout: 8_000,
   },
   use: {
-    actionTimeout: 10_000,
+    // Bumped from 10s during Phase 2: the shared public demo site is
+    // noticeably slower to respond to actions (e.g. the add-to-cart AJAX
+    // call) under this suite's local parallel-worker load than it is when
+    // exercised serially - a resource-contention symptom of testing
+    // shared third-party infrastructure, not a defect in the app or suite.
+    actionTimeout: 15_000,
     navigationTimeout: 15_000,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
