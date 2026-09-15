@@ -10,23 +10,30 @@ test.describe('contact us', { tag: '@contact' }, () => {
 
     const name = 'SDET Contact';
     const email = `sdet.contact.${Date.now()}@example.com`;
-    await contactUsPage.fillForm(name, email, 'Test subject', 'Test message body');
-    await contactUsPage.uploadFile(uploadFilePath);
 
-    // Submitting triggers a native window.confirm() dialog on this site
-    // (confirmed live, all three browsers) - handled deterministically by
-    // registering the dialog listener immediately before the click.
-    await contactUsPage.submitAndAcceptDialog();
+    await test.step('fill out the contact form', async () => {
+      await contactUsPage.fillForm(name, email, 'Test subject', 'Test message body');
+      await contactUsPage.uploadFile(uploadFilePath);
+    });
 
-    await expect(contactUsPage.successMessage).toContainText(
-      'Success! Your details have been submitted successfully.',
-    );
+    await test.step('submit the form', async () => {
+      // Submitting triggers a native window.confirm() dialog on this site
+      // (confirmed live, all three browsers) - handled deterministically by
+      // registering the dialog listener immediately before the click.
+      await contactUsPage.submitAndAcceptDialog();
 
-    await contactUsPage.homeButton.click();
-    // A longer timeout here: the live site's ad network occasionally
-    // intercepts this outbound click with an interstitial ("Google
-    // Vignette") that delays the real navigation by a few seconds.
-    await expect(page).toHaveURL(/automationexercise\.com\/?$/, { timeout: 15_000 });
-    await expect(homePage.featuresItemsHeading).toBeVisible();
+      await expect(contactUsPage.successMessage).toContainText(
+        'Success! Your details have been submitted successfully.',
+      );
+    });
+
+    await test.step('return to the home page', async () => {
+      await contactUsPage.homeButton.click();
+      // A longer timeout here: the live site's ad network occasionally
+      // intercepts this outbound click with an interstitial ("Google
+      // Vignette") that delays the real navigation by a few seconds.
+      await expect(page).toHaveURL(/automationexercise\.com\/?$/, { timeout: 15_000 });
+      await expect(homePage.featuresItemsHeading).toBeVisible();
+    });
   });
 });

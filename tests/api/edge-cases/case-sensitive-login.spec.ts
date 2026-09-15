@@ -70,23 +70,29 @@ test(
     const payload = buildAccountPayload(email);
 
     try {
-      const createResponse = await request.post('/api/createAccount', { form: payload });
-      const createBody = await createResponse.json();
-      expect(createBody.responseCode).toBe(201);
-
-      const exactCaseResponse = await request.post('/api/verifyLogin', {
-        form: { email, password: payload.password },
+      await test.step('createAccount', async () => {
+        const createResponse = await request.post('/api/createAccount', { form: payload });
+        const createBody = await createResponse.json();
+        expect(createBody.responseCode).toBe(201);
       });
-      const exactCaseBody = await exactCaseResponse.json();
-      expect(exactCaseBody.responseCode).toBe(200);
-      expect(exactCaseBody.message).toBe('User exists!');
 
-      const upperCaseResponse = await request.post('/api/verifyLogin', {
-        form: { email: email.toUpperCase(), password: payload.password },
+      await test.step('verifyLogin succeeds with the exact-case email', async () => {
+        const exactCaseResponse = await request.post('/api/verifyLogin', {
+          form: { email, password: payload.password },
+        });
+        const exactCaseBody = await exactCaseResponse.json();
+        expect(exactCaseBody.responseCode).toBe(200);
+        expect(exactCaseBody.message).toBe('User exists!');
       });
-      const upperCaseBody = await upperCaseResponse.json();
-      expect(upperCaseBody.responseCode).toBe(404);
-      expect(upperCaseBody.message).toBe('User not found!');
+
+      await test.step('verifyLogin fails with an upper-cased email', async () => {
+        const upperCaseResponse = await request.post('/api/verifyLogin', {
+          form: { email: email.toUpperCase(), password: payload.password },
+        });
+        const upperCaseBody = await upperCaseResponse.json();
+        expect(upperCaseBody.responseCode).toBe(404);
+        expect(upperCaseBody.message).toBe('User not found!');
+      });
     } finally {
       await deleteAccountBestEffort(request, email, payload.password);
     }

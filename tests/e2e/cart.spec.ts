@@ -106,28 +106,36 @@ test.describe('cart', { tag: '@cart' }, () => {
     apiAccount,
     page,
   }) => {
-    await productsPage.goto();
-    const referenceCard = productsPage.productCards.first();
-    const referenceName = normalize(await productsPage.nameFor(referenceCard).innerText());
-    const searchTerm = referenceName.split(' ')[0];
+    let name = '';
 
-    await productsPage.search(searchTerm);
-    await expect(page.locator('h2.title.text-center')).toContainText(/searched products/i);
-    await expect(productsPage.productCards.first()).toBeVisible();
+    await test.step('search for a product and add it to the cart', async () => {
+      await productsPage.goto();
+      const referenceCard = productsPage.productCards.first();
+      const referenceName = normalize(await productsPage.nameFor(referenceCard).innerText());
+      const searchTerm = referenceName.split(' ')[0];
 
-    const cardToAdd = productsPage.productCards.first();
-    const name = normalize(await productsPage.nameFor(cardToAdd).innerText());
-    await productsPage.addToCartFromListing(cardToAdd);
-    await productsPage.cartConfirmationModal.goToCart();
+      await productsPage.search(searchTerm);
+      await expect(page.locator('h2.title.text-center')).toContainText(/searched products/i);
+      await expect(productsPage.productCards.first()).toBeVisible();
 
-    await expect(cartPage.rowByProductName(name)).toBeVisible();
+      const cardToAdd = productsPage.productCards.first();
+      name = normalize(await productsPage.nameFor(cardToAdd).innerText());
+      await productsPage.addToCartFromListing(cardToAdd);
+      await productsPage.cartConfirmationModal.goToCart();
 
-    await signupLoginPage.goto();
-    await signupLoginPage.login(apiAccount.email, apiAccount.password);
-    await expect(signupLoginPage.loggedInAsText).toHaveText(`Logged in as ${apiAccount.name}`);
+      await expect(cartPage.rowByProductName(name)).toBeVisible();
+    });
 
-    await cartPage.goto();
-    await expect(cartPage.rowByProductName(name)).toBeVisible();
+    await test.step('log in with an existing account', async () => {
+      await signupLoginPage.goto();
+      await signupLoginPage.login(apiAccount.email, apiAccount.password);
+      await expect(signupLoginPage.loggedInAsText).toHaveText(`Logged in as ${apiAccount.name}`);
+    });
+
+    await test.step('cart contents persist after login', async () => {
+      await cartPage.goto();
+      await expect(cartPage.rowByProductName(name)).toBeVisible();
+    });
   });
 
   test('Test Case 22: Add to cart from Recommended items', async ({ homePage, cartPage }) => {
