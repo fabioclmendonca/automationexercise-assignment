@@ -289,11 +289,12 @@ plus a `message` field.
 
 This means `expect(response.status()).toBe(200)` alone is not sufficient
 proof of success - it would pass even when the API returned an error body.
-The API smoke test (`tests/api/smoke.spec.ts`) therefore asserts **both**:
+Every API test (e.g. `tests/api/account-lifecycle.spec.ts`) therefore asserts
+**both**:
 
 1. `response.status() === 200` (transport reached, no network/proxy error), and
-2. `body.responseCode === 200` (the API's own success signal) plus the shape
-   of the expected payload (`body.products` is an array).
+2. `body.responseCode` matches the expected outcome (the API's own
+   success/error signal) plus the shape of the expected payload.
 
 Any future API test exercising error/negative paths must assert on
 `body.responseCode` (and `body.message` where meaningful), not on HTTP

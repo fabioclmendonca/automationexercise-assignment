@@ -50,7 +50,7 @@ npm run typecheck      # tsc --noEmit
 
 Every test is tagged by domain (`@cart`, `@login`, `@checkout`, `@product`,
 `@brand`, `@search`, `@account`, `@registration`, `@subscription`,
-`@navigation`, `@contact`, `@scroll`, `@smoke`, plus `@edge-case` for the
+`@navigation`, `@contact`, `@scroll`, plus `@edge-case` for the
 QA-added coverage in `tests/*/edge-cases/`) using Playwright's native tag
 support - no custom tagging layer. Where a domain exists at both layers
 (e.g. login), the same tag is used on both the API and E2E tests, so one
