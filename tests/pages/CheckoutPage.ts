@@ -66,6 +66,11 @@ export class CheckoutPage {
     this.continueButton = page.locator('[data-qa="continue-button"]');
   }
 
+  /** Navigates directly to `/checkout`, bypassing `cartPage.proceedToCheckout()`. */
+  async goto(): Promise<void> {
+    await this.page.goto('/checkout');
+  }
+
   /**
    * From the checkout page (Address Details / Review Your Order already
    * visible), enters an order comment, places the order, fills the dummy

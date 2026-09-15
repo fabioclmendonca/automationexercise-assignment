@@ -5,4 +5,5 @@ playwright-report/
 blob-report/
 playwright/.cache/
 .claude
+CLAUDE.md
 .DS_Store
