@@ -201,3 +201,205 @@ security testing, and anything requiring a completed real payment (see
 - Shared-data risk (F5): already reflected in `test-strategy.md`'s
   assumptions/risks — unique generated test data, no "account does not
   exist" assertions, teardown via `deleteAccount` where practical.
+
+## Session 2 — follow-up on domain-analysis hypotheses
+
+**Charter (follow-up session, same day):** a short, targeted second pass
+against the live site/API to directly verify seven specific hypotheses
+raised during domain analysis but not yet checked by any existing test or
+the first session (H1–H3 cart behavior with multiple products/repeat adds
+and an empty cart, H4–H5 account/auth edge cases, H6–H7 two more API
+contract edges). Same method as session 1: `curl` for API calls, throwaway
+Playwright scripts (Chromium, headless) driving the live site for UI
+behavior. Each hypothesis below is reproduced directly, not inferred.
+
+### H1 — Adding the same product twice via separate "Add to cart" clicks
+
+- **Done:** As a guest, opened `/product_details/2` (Men Tshirt, Rs. 400),
+  clicked "Add to cart", navigated away to `/`, then navigated back to
+  `/product_details/2` and clicked "Add to cart" again (a second, separate
+  action on the same product, not an edit of the quantity field).
+- **Observed:** `/view_cart` shows exactly **one row** (`#product-2`) with
+  quantity `2` and total `Rs. 800`. No duplicate row was created.
+- **Verdict:** No finding. The cart correctly merges repeat adds of the
+  same product into the existing row's quantity rather than duplicating
+  it.
+
+### H2 — Checkout total with multiple different products at different quantities
+
+- **Done:** Logged in as a fresh account, added Blue Top (`Rs. 500`) at
+  quantity `2` and Sleeveless Dress (`Rs. 1000`) at quantity `3` (two
+  separate products, two separate quantities — every existing test in this
+  repo only ever carries one product), then proceeded to `/checkout`.
+- **Observed:** `/view_cart` line totals: `Rs. 1000` and `Rs. 3000`
+  (correct: `500×2` and `1000×3`). On `/checkout`, the "Review Your Order"
+  table reproduces both line items with the same per-line totals and adds
+  a **"Total Amount" row of `Rs. 4000`** — the exact sum of the two lines.
+- **Verdict:** No finding. Multi-product, multi-quantity checkout totals
+  are computed correctly.
+
+### H3 — Navigating directly to `/checkout` with an empty cart
+
+- **Done:** Logged in as a brand-new account that had never added anything
+  to its cart in this session, confirmed `/view_cart` shows "Cart is
+  empty! Click here to buy products.", then navigated directly to
+  `/checkout` by URL. To establish real impact rather than just a
+  rendering quirk, also filled the order comment, clicked "Place Order",
+  filled the dummy payment form, and clicked "Pay and Confirm Order".
+- **Observed:** `/checkout` returns HTTP `200` and renders the full
+  Address Details / Review Your Order page with an **empty item table**
+  and **"Total Amount" `Rs. 0`** — no redirect, warning, or block of any
+  kind. Continuing the flow, the order was accepted end-to-end: the page
+  navigated to `/payment`, and after submitting the dummy card form it
+  reached `/payment_done/0` displaying "ORDER PLACED! Congratulations!
+  Your order has been confirmed!" with a working "Download Invoice" link.
+- **Verdict:** Promoted to **F6** (see below). Reproducible, high-impact:
+  a real order confirmation is issued for a cart containing zero items and
+  Rs. 0.
+
+### H4 — HTML/script-injection-shaped name reflected in the "Logged in as" header
+
+- **Done:** Signed up a new account with name
+  `<script>alert(1)</script>Marker4` via the real signup form (not the
+  API), completed the account-information form, and after landing on the
+  logged-in home page, read both the `innerText` and the raw `outerHTML`
+  of the header's "Logged in as" element.
+- **Observed:** `outerHTML` is `<a><i class="fa fa-user"></i> Logged in as
+  <b>&lt;script&gt;alert(1)&lt;/script&gt;Marker4</b></a>` — the tag
+  delimiters are HTML-entity-encoded (`&lt;`/`&gt;`). The literal string
+  `<script>` never appears unescaped in the DOM; no script executes and no
+  raw markup renders.
+- **Verdict:** No finding. Output encoding on this header is correct. This
+  is a second, independent confirmation (alongside the search field
+  checked in session 1) that this application escapes user-supplied
+  strings on render rather than trusting them.
+
+### H5 — Login with different email casing than registered
+
+- **Done:** Created an account via `POST /api/createAccount` with a
+  lowercase email (`teste.case.<ts>@example.com`), confirmed
+  `POST /api/verifyLogin` succeeds with that exact casing, then called the
+  same endpoint again with the email upper-cased
+  (`TESTE.CASE.<TS>@EXAMPLE.COM`), same password.
+- **Observed:** Exact casing: `{"responseCode": 200, "message": "User
+  exists!"}`. Upper-cased email: **`{"responseCode": 404, "message":
+  "User not found!"}`**. `verifyLogin` is the same endpoint the login form
+  submits to, so this is authoritative for the login UI's behavior, not
+  just an API-only code path.
+- **Verdict:** Promoted to **F7** (see below). Login is case-sensitive on
+  the email address.
+
+### H6 — `PUT /api/updateAccount` targeting an email that was never registered
+
+- **Done:** Called `PUT /api/updateAccount` with a full, valid-shaped
+  payload (all required fields present) but an email that has never been
+  used to create an account on this instance.
+- **Observed:** `{"responseCode": 404, "message": "Account not found!"}`.
+- **Verdict:** No finding. Correct, clear not-found handling — this path
+  behaves properly, in contrast to the missing coverage gap that prompted
+  the hypothesis (every existing test only calls `updateAccount` against
+  an account the same test just created).
+
+### H7 — `POST /api/createAccount` with exactly one required field missing
+
+- **Done:** Called `createAccount` with every required field present
+  except `zipcode`. As a control, repeated the call with the request body
+  completely empty (all fields missing).
+- **Observed:** Missing only `zipcode`: `{"responseCode": 400, "message":
+  "Bad request, zipcode parameter is missing in POST request."}` — the
+  message names that exact field. Fully empty body (control):
+  `{"responseCode": 400, "message": "Bad request, name parameter is
+  missing in POST request."}` — names `name`, the first field it checks.
+- **Verdict:** No finding (positive result worth recording). Real
+  per-field validation exists: the API does not silently accept an
+  incomplete payload, and it does not return one generic "something is
+  missing" message either — it identifies the specific missing field each
+  time, which is more precise and more testable than either failure mode
+  the hypothesis was checking for.
+
+### F6 — Checkout confirms a real order for an empty cart
+
+- **Area:** Checkout (`/checkout`, `/payment`, `/payment_done/{id}`)
+- **Steps:** Log in with an account whose cart has never had an item
+  added, navigate directly to `/checkout`, click "Place Order", fill the
+  dummy payment form, click "Pay and Confirm Order".
+- **Expected:** A cart with zero items should block checkout — redirect to
+  `/view_cart` or the products page, or at minimum disable "Place Order"
+  and/or reject the order server-side.
+- **Observed:** `/checkout` renders normally (HTTP 200) with an empty
+  order table and `Total Amount: Rs. 0`, "Place Order" is enabled and
+  clickable, the dummy payment form submits, and the flow completes at
+  `/payment_done/0` with "ORDER PLACED! Congratulations! Your order has
+  been confirmed!" and a working invoice download.
+- **Severity/Priority:** High. This is the same class of issue as F1 (a
+  core business-logic flow — the one thing checkout must get right —
+  accepting a state it clearly wasn't designed for), but one step further
+  down the funnel: F1 corrupts a total; this issues a confirmed order
+  record with no items and no value. Any downstream system trusting
+  "order placed" as a signal (fulfillment, analytics, email) would act on
+  a phantom order.
+- **Reasoning:** Directly reproduced through the full user-facing flow,
+  not just observed at the page-render level — the "no items" state was
+  confirmed on `/view_cart` immediately beforehand, and the order was
+  carried through to a real confirmation page and order ID (`0`), not
+  merely accepted by an intermediate step.
+
+### F7 — Login is case-sensitive on the registered email address
+
+- **Area:** `POST /api/verifyLogin` (backs the `/login` form)
+- **Steps:** Register an account with a lowercase email, verify login
+  succeeds with that exact casing, then attempt login with the same email
+  upper-cased.
+- **Expected:** Most real-world account systems (and email providers)
+  treat the mailbox address as effectively case-insensitive for login
+  purposes, even though the local part is technically case-sensitive per
+  RFC 5321; users commonly expect `Name@Example.com` and
+  `name@example.com` to be the same account, and mobile keyboards'
+  auto-capitalization makes an accidental case mismatch a routine
+  real-world occurrence.
+- **Observed:** `{"responseCode": 404, "message": "User not found!"}` for
+  the upper-cased email, against `{"responseCode": 200, "message": "User
+  exists!"}` for the exact original casing — the account is otherwise
+  identical and was created and queried within the same short window.
+- **Severity/Priority:** Medium. Not a security issue, and not
+  unambiguously "wrong" per spec — but a genuine usability/business risk:
+  a plausible real-world path (mobile auto-capitalize, copy-pasting an
+  email from an all-caps source, a user who registered via a
+  case-preserving field and later half-remembers it) locks a legitimate
+  user out with a generic "not found" message that gives no hint the
+  cause is casing.
+- **Reasoning:** Directly reproduced via the exact endpoint the login form
+  submits to, with a matched-pair comparison (identical account, identical
+  password, only the email's casing changed) rather than a one-off call.
+
+## Non-findings from this session
+
+- **H1:** repeat "Add to cart" on the same product merges into the
+  existing cart row's quantity; no duplicate row.
+- **H2:** checkout's "Total Amount" correctly sums multiple line items at
+  different quantities (`1000 + 3000 = 4000`, exact).
+- **H4:** an HTML/script-injection-shaped signup name is HTML-entity-
+  encoded when rendered in the "Logged in as" header; no reflected XSS.
+- **H6:** `updateAccount` against a never-registered email returns a
+  clean, correct `404`/"Account not found!" — no gap here.
+- **H7:** `createAccount` performs real per-field validation, naming the
+  specific missing field each time, rather than a single generic message
+  or silent acceptance.
+
+## Summary for implementation (session 2)
+
+- Empty-cart checkout (F6): strong candidate for one deliberate E2E
+  negative-path test if time allows — log in, skip adding any product,
+  assert `/checkout` (or the order-confirmation step) is blocked, or at
+  minimum document this as a known gap if not automated.
+- Case-sensitive login (F7): worth one negative API test
+  (`verifyLogin` with the registered email's case flipped expecting
+  `404`) since it's a one-call, fully deterministic check with no cleanup
+  cost beyond the account itself.
+- H1/H2 (cart merge behavior, multi-item checkout totals): confirmed
+  correct — no automated coverage strictly required to "catch" a bug, but
+  H2 in particular is a reasonable candidate for a single positive E2E
+  test since it exercises a path (multiple products in one cart) nothing
+  else in this repo currently covers.
+- H4/H6/H7: confirmed correct/secure; no action needed beyond what
+  `test-strategy.md` already plans.

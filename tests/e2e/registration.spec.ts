@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/fixtures';
+import { test, expect } from '../fixtures/fixtures';
 
 test.describe('registration', () => {
   test('Test Case 1: Register User', async ({ signupLoginPage }) => {

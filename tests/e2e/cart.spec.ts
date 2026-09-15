@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/fixtures';
+import { test, expect } from '../fixtures/fixtures';
 
 function normalize(text: string): string {
   return text.replace(/\s+/g, ' ').trim();

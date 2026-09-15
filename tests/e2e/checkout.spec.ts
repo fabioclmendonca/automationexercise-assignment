@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/fixtures';
+import { test, expect } from '../fixtures/fixtures';
 
 test.describe('checkout', () => {
   test('Test Case 14: Place Order: Register while Checkout', async ({

@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/fixtures';
+import { test, expect } from '../fixtures/fixtures';
 
 // Some brand names contain regex-special characters (e.g. "&"); this keeps
 // the dynamically-captured brand/subcategory name safe to embed in a RegExp

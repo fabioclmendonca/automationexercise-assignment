@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/fixtures';
+import { test, expect } from '../fixtures/fixtures';
 
 // The live site's ad network occasionally wraps a word of a product name in
 // an inline annotation element, which introduces extra whitespace without
