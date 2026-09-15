@@ -7,7 +7,7 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-test.describe('navigation', () => {
+test.describe('navigation', { tag: '@navigation' }, () => {
   test('Test Case 7: Verify Test Cases Page', async ({ homePage, page }) => {
     await homePage.goto();
     await expect(homePage.featuresItemsHeading).toBeVisible();

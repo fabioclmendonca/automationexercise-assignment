@@ -1,6 +1,6 @@
 import { test, expect } from '../../fixtures/fixtures';
 
-test.describe('checkout gating', () => {
+test.describe('checkout gating', { tag: ['@checkout', '@edge-case'] }, () => {
   test('a guest is shown the login/register modal instead of reaching checkout', async ({
     productDetailPage,
     cartPage,

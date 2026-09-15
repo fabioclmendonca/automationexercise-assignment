@@ -12,7 +12,7 @@ function parsePrice(text: string): number {
   return match ? Number(match[0]) : NaN;
 }
 
-test.describe('cart', () => {
+test.describe('cart', { tag: '@cart' }, () => {
   test('adding a realistic quantity computes the correct cart row and total', async ({
     productDetailPage,
     cartPage,

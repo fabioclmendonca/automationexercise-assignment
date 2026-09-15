@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 // docs/test-strategy.md ("Verified API quirk") - every assertion below
 // reads body.responseCode, never bare response.ok()/status.
 
-test.describe('GET /api/productsList', () => {
+test.describe('GET /api/productsList', { tag: '@product' }, () => {
   test('returns the product catalog with a successful business response code', async ({
     request,
   }) => {
@@ -28,7 +28,7 @@ test.describe('GET /api/productsList', () => {
   });
 });
 
-test.describe('GET /api/brandsList', () => {
+test.describe('GET /api/brandsList', { tag: '@brand' }, () => {
   test('returns the brand catalog with a successful business response code', async ({
     request,
   }) => {

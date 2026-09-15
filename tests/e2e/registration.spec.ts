@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/fixtures';
 
-test.describe('registration', () => {
+test.describe('registration', { tag: '@registration' }, () => {
   test('Test Case 1: Register User', async ({ signupLoginPage }) => {
     const name = 'SDET Registration';
     const email = `sdet.registration.${Date.now()}@example.com`;

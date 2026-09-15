@@ -66,7 +66,7 @@ async function deleteAccountBestEffort(
   }
 }
 
-test.describe('account lifecycle (API)', () => {
+test.describe('account lifecycle (API)', { tag: '@account' }, () => {
   test('create, verify, update, and delete an account end to end', async ({ request }) => {
     const email = `sdet.lifecycle.${Date.now()}@example.com`;
     const payload = buildAccountPayload(email);

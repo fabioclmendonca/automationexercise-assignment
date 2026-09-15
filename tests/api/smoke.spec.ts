@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('smoke', () => {
+test.describe('smoke', { tag: '@smoke' }, () => {
   test('GET /api/productsList returns products with a successful business response code', async ({
     request,
   }) => {

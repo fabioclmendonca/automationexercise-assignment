@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 // that positive path. See docs/test-strategy.md ("Verified API quirk"):
 // status is always 200, so every assertion below reads body.responseCode.
 
-test.describe('POST /api/verifyLogin', () => {
+test.describe('POST /api/verifyLogin', { tag: '@login' }, () => {
   test('rejects a request missing required parameters', async ({ request }) => {
     const response = await request.post('/api/verifyLogin', {
       form: { password: 'irrelevant' },

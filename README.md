@@ -44,6 +44,35 @@ npm run test:ui        # Playwright UI mode
 npm run typecheck      # tsc --noEmit
 ```
 
+### Running by domain tag
+
+Every test is tagged by domain (`@cart`, `@login`, `@checkout`, `@product`,
+`@brand`, `@search`, `@account`, `@registration`, `@subscription`,
+`@navigation`, `@contact`, `@scroll`, `@smoke`, plus `@edge-case` for the
+QA-added coverage in `tests/*/edge-cases/`) using Playwright's native tag
+support - no custom tagging layer. Where a domain exists at both layers
+(e.g. login), the same tag is used on both the API and E2E tests, so one
+filter runs both:
+
+```bash
+npx playwright test --grep @cart              # only cart tests
+npx playwright test --grep "@login|@checkout" # login OR checkout tests
+npx playwright test --grep @edge-case         # only the QA-added edge cases
+```
+
+### Viewing the HTML report
+
+After any run (`npm test`, `npm run test:e2e`, a tag-filtered run, etc.),
+open the HTML report that was just generated:
+
+```bash
+npx playwright show-report
+```
+
+This opens `playwright-report/index.html` in a browser, with a
+pass/fail/skip breakdown per test, traces, and screenshots for anything
+that failed or was retried.
+
 ## Project structure
 
 ```text

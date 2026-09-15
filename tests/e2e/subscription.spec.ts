@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/fixtures';
 
-test.describe('subscription', () => {
+test.describe('subscription', { tag: '@subscription' }, () => {
   test('Test Case 10: Verify Subscription in home page', async ({ homePage }) => {
     await homePage.goto();
     await homePage.subscriptionFooter.heading.scrollIntoViewIfNeeded();

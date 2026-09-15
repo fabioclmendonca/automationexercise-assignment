@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/fixtures';
 
-test.describe('login', () => {
+test.describe('login', { tag: '@login' }, () => {
   test('Test Case 2: Login User with correct email and password', async ({
     signupLoginPage,
     apiAccount,

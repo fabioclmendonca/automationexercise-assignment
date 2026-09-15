@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/fixtures';
 
-test.describe('checkout', () => {
+test.describe('checkout', { tag: '@checkout' }, () => {
   test('Test Case 14: Place Order: Register while Checkout', async ({
     productDetailPage,
     cartPage,

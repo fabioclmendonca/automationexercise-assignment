@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 // See docs/test-strategy.md ("Verified API quirk"): status is always 200,
 // so every assertion below reads body.responseCode.
 
-test.describe('POST /api/searchProduct', () => {
+test.describe('POST /api/searchProduct', { tag: '@search' }, () => {
   test('returns matching products for a known search term', async ({ request }) => {
     const response = await request.post('/api/searchProduct', {
       form: { search_product: 'Top' },

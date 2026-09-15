@@ -3,7 +3,7 @@ import { test, expect } from '../fixtures/fixtures';
 
 const uploadFilePath = path.join(__dirname, 'data', 'sample-upload.txt');
 
-test.describe('contact us', () => {
+test.describe('contact us', { tag: '@contact' }, () => {
   test('Test Case 6: Contact Us Form', async ({ contactUsPage, homePage, page }) => {
     await contactUsPage.goto();
     await expect(contactUsPage.getInTouchHeading).toBeVisible();

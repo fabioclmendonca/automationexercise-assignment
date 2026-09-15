@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/fixtures';
 
-test.describe('scroll behavior', () => {
+test.describe('scroll behavior', { tag: '@scroll' }, () => {
   test("Test Case 25: Verify Scroll Up using 'Arrow' button and Scroll Down functionality", async ({
     homePage,
   }) => {

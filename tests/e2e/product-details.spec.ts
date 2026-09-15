@@ -8,7 +8,7 @@ function normalize(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
 }
 
-test.describe('product details', () => {
+test.describe('product details', { tag: '@product' }, () => {
   test('discovering a product via search shows the same name and price as the catalog card', async ({
     productsPage,
     productDetailPage,
